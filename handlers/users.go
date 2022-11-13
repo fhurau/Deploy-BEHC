@@ -5,10 +5,15 @@ import (
 	usersdto "backend/dto/users"
 	"backend/models"
 	"backend/repositories"
+	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"os"
 	"strconv"
 
+	"github.com/cloudinary/cloudinary-go/v2"
+	"github.com/cloudinary/cloudinary-go/v2/api/uploader"
 	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/mux"
 )
@@ -70,6 +75,11 @@ func (h *handler) FindUsers(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(response)
 	}
 
+	for i, p := range users {
+		imagePath := os.Getenv("PATH_FILE") + p.Image
+		users[i].Image = imagePath
+	}
+
 	w.WriteHeader(http.StatusOK)
 	response := dto.SuccessResult{Code: http.StatusOK, Data: users}
 	json.NewEncoder(w).Encode(response)
@@ -87,6 +97,8 @@ func (h *handler) GetUser(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(response)
 		return
 	}
+
+	user.Image = os.Getenv("PATH_FILE") + user.Image
 
 	w.WriteHeader(http.StatusOK)
 	response := dto.SuccessResult{Code: http.StatusOK, Data: convertResponse(user)}
@@ -106,14 +118,29 @@ func convertResponse(u models.User) usersdto.UserResponse {
 func (h *handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
+	// get image filepath
 	dataContex := r.Context().Value("dataFile")
-	filename := dataContex.(string)
+	filepath := dataContex.(string)
+
+	var ctx = context.Background()
+	var CLOUD_NAME = os.Getenv("CLOUD_NAME")
+	var API_KEY = os.Getenv("API_KEY")
+	var API_SECRET = os.Getenv("API_SECRET")
+
+	// Add your Cloudinary credentials ...
+	cld, _ := cloudinary.NewFromParams(CLOUD_NAME, API_KEY, API_SECRET)
+
+	// Upload file to Cloudinary ...
+	resp, err := cld.Upload.Upload(ctx, filepath, uploader.UploadParams{Folder: "hellocorona"})
+
+	if err != nil {
+		fmt.Println(err.Error())
+	}
 
 	request := usersdto.UpdateUserRequest{
 		Name:    r.FormValue("name"),
 		Email:   r.FormValue("email"),
 		Phone:   r.FormValue("phone"),
-		Image:   filename,
 		Address: r.FormValue("address"),
 		Gender:  r.FormValue("gender"),
 	}
@@ -142,8 +169,8 @@ func (h *handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	if request.Address != "" {
 		user.Address = request.Address
 	}
-	if request.Image != "" {
-		user.Image = request.Image
+	if filepath != "" {
+		user.Image = resp.SecureURL
 	}
 
 	data, err := h.UserRepository.UpdateUser(user, id)

@@ -23,7 +23,7 @@ type handlerArticle struct {
 	ArticleRepository repositories.ArticleRepository
 }
 
-var path_file = "http://localhost:5000/uploads/"
+// var path_file = "http://localhost:5000/uploads/"
 
 func HandlerArticle(ArticleRepository repositories.ArticleRepository) *handlerArticle {
 	return &handlerArticle{ArticleRepository}
