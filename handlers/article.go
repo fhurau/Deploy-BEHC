@@ -41,7 +41,7 @@ func (h *handlerArticle) FindArticles(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for i, p := range articles {
-		articles[i].Image = path_file + p.Image
+		articles[i].Image = os.Getenv("PATH_FILE") + p.Image
 	}
 
 	w.WriteHeader(http.StatusOK)
@@ -63,7 +63,7 @@ func (h *handlerArticle) GetArticle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	article.Image = path_file + article.Image
+	article.Image = os.Getenv("PATH_FILE") + article.Image
 
 	w.WriteHeader(http.StatusOK)
 	response := dto.SuccessResult{Code: http.StatusOK, Data: convertResponseArticle(article)}
