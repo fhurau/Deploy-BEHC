@@ -7,7 +7,6 @@ import (
 	"backend/repositories"
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"os"
 	"strconv"
@@ -15,7 +14,7 @@ import (
 	"github.com/cloudinary/cloudinary-go/v2"
 	"github.com/cloudinary/cloudinary-go/v2/api/uploader"
 
-	// "github.com/go-playground/validator/v10"
+	"github.com/go-playground/validator/v10"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/gorilla/mux"
 )
@@ -86,11 +85,7 @@ func (h *handlerArticle) CreateArticle(w http.ResponseWriter, r *http.Request) {
 
 	cld, _ := cloudinary.NewFromParams(CLOUD_NAME, API_KEY, API_SECRET)
 
-	resp, err := cld.Upload.Upload(ctx, filepath, uploader.UploadParams{Folder: "hellocorona"})
-
-	if err != nil {
-		fmt.Println(err.Error())
-	}
+	resp, _ := cld.Upload.Upload(ctx, filepath, uploader.UploadParams{Folder: "hellocorona"})
 
 	request := articledto.ArticleRequest{
 		Title:  r.FormValue("title"),
@@ -98,14 +93,14 @@ func (h *handlerArticle) CreateArticle(w http.ResponseWriter, r *http.Request) {
 		Desc:   r.FormValue("desc"),
 	}
 
-	// validation := validator.New()
-	// err := validation.Struct(request)
-	// if err != nil {
-	// 	w.WriteHeader(http.StatusInternalServerError)
-	// 	response := dto.ErrorResult{Code: http.StatusInternalServerError, Message: err.Error()}
-	// 	json.NewEncoder(w).Encode(response)
-	// 	return
-	// }
+	validation := validator.New()
+	err := validation.Struct(request)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		response := dto.ErrorResult{Code: http.StatusInternalServerError, Message: err.Error()}
+		json.NewEncoder(w).Encode(response)
+		return
+	}
 
 	article := models.Article{
 		Title:  request.Title,
